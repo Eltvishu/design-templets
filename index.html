@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minimal Social Card Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #ff00a8; /* neon pink */
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center mb-4">Create Your Social Card</h1>
+
+    <form id="form" class="space-y-4">
+      <input type="text" placeholder="X Handle (@example)" id="handle" class="w-full px-4 py-2 border rounded" required />
+      <input type="text" placeholder="Role (e.g. Meme Lord)" id="role" class="w-full px-4 py-2 border rounded" required />
+      <input type="text" placeholder="Berry Text" id="berry" class="w-full px-4 py-2 border rounded" required />
+
+      <label class="block">Upload Profile Picture
+        <input type="file" accept="image/*" id="pfp" class="block mt-2" required />
+      </label>
+
+      <button type="submit" class="bg-black text-white font-bold py-2 px-4 rounded w-full">
+        Generate Image
+      </button>
+    </form>
+
+    <canvas id="canvas" width="1080" height="1080" class="mt-6 border rounded hidden"></canvas>
+    <a id="downloadBtn" download="social-card.png" class="hidden mt-2 block text-center bg-green-500 text-white font-bold py-2 px-4 rounded">Download Image</a>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const handle = document.getElementById('handle').value;
+      const role = document.getElementById('role').value;
+      const berry = document.getElementById('berry').value;
+      const pfpFile = document.getElementById('pfp').files[0];
+
+      if (!pfpFile) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const pfp = new Image();
+        pfp.onload = () => {
+          // Draw background
+          ctx.fillStyle = '#ff00a8';
+          ctx.fillRect(0, 0, 1080, 1080);
+
+          // Draw black card
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.roundRect(90, 90, 900, 900, 60);
+          ctx.fill();
+
+          // Profile Picture Circle
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(240, 250, 100, 0, Math.PI * 2, true);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(pfp, 140, 150, 200, 200);
+          ctx.restore();
+
+          // Handle + Role rounded rectangles
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.roundRect(380, 180, 500, 60, 30);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.roundRect(380, 260, 500, 60, 30);
+          ctx.fill();
+
+          ctx.font = '28px sans-serif';
+          ctx.fillStyle = '#000';
+          ctx.fillText(handle, 400, 220);
+
+          ctx.font = '24px sans-serif';
+          ctx.fillText(role, 400, 300);
+
+          // Bottom Berry Text box
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.roundRect(150, 620, 780, 350, 40);
+          ctx.fill();
+
+          ctx.font = 'bold 36px sans-serif';
+          ctx.fillStyle = '#000';
+          ctx.textAlign = 'center';
+          ctx.fillText(berry, 540, 800);
+
+          canvas.classList.remove('hidden');
+          downloadBtn.href = canvas.toDataURL();
+          downloadBtn.classList.remove('hidden');
+        };
+        pfp.src = reader.result;
+      };
+      reader.readAsDataURL(pfpFile);
+    });
+
+    // Add canvas roundRect polyfill if not supported
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
+        if (typeof radius === 'number') {
+          radius = { tl: radius, tr: radius, br: radius, bl: radius };
+        } else {
+          const defaultRadius = { tl: 0, tr: 0, br: 0, bl: 0 };
+          for (let side in defaultRadius) {
+            radius[side] = radius[side] || defaultRadius[side];
+          }
+        }
+        this.beginPath();
+        this.moveTo(x + radius.tl, y);
+        this.lineTo(x + width - radius.tr, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+        this.lineTo(x + width, y + height - radius.br);
+        this.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+        this.lineTo(x + radius.bl, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+        this.lineTo(x, y + radius.tl);
+        this.quadraticCurveTo(x, y, x + radius.tl, y);
+        this.closePath();
+        return this;
+      };
+    }
+  </script>
+</body>
+</html>
